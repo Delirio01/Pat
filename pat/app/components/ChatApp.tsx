@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
+import GalaxyBackground from "./GalaxyBackground";
 
 type Role = "system" | "user" | "assistant";
 
@@ -17,6 +18,7 @@ type Settings = {
   systemPrompt: string;
   webScrapeEnabled: boolean;
   webScrapeAuto: boolean;
+  theme: "default" | "galaxy";
   githubEnabled: boolean;
   githubRepo: { owner: string; repo: string; ref: string } | null;
 };
@@ -37,6 +39,20 @@ type WebPin = {
   title: string;
   url: string;
   createdAt: number;
+};
+
+type DagSnapshot = {
+  nodes: Array<{
+    id: string;
+    title: string;
+    description?: string;
+    score?: number;
+    tags?: string[];
+    x: number;
+    y: number;
+  }>;
+  edges: Array<{ id: string; source: string; target: string }>;
+  version?: number;
 };
 
 type ApiResponse =
@@ -72,6 +88,8 @@ const TASKS_KEY = "pat.tasks.v1";
 const WEB_PINS_KEY = "pat.webPins.v1";
 const ACTIVE_PROJECT_KEY = "pat.activeProjectId.v1";
 const SIDEBAR_KEY = "pat.sidebar.v1";
+const DAG_KEY = "pat.dag.v1";
+const DAG_ASK_PAT_KEY = "pat.dag.askPat.v1";
 
 const DEFAULT_SETTINGS: Settings = {
   model: "grok-3",
@@ -80,6 +98,7 @@ const DEFAULT_SETTINGS: Settings = {
     "You are Grok, running in a sleek JARVIS-style console. Be direct, helpful, and technical. Use short, actionable answers. Ask clarifying questions when needed.",
   webScrapeEnabled: false,
   webScrapeAuto: true,
+  theme: "default",
   githubEnabled: false,
   githubRepo: null,
 };
@@ -217,6 +236,7 @@ export default function ChatApp() {
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SETTINGS.systemPrompt);
   const [webScrapeEnabled, setWebScrapeEnabled] = useState(DEFAULT_SETTINGS.webScrapeEnabled);
   const [webScrapeAuto, setWebScrapeAuto] = useState(DEFAULT_SETTINGS.webScrapeAuto);
+  const [theme, setTheme] = useState<Settings["theme"]>(DEFAULT_SETTINGS.theme);
   const [githubEnabled, setGithubEnabled] = useState(DEFAULT_SETTINGS.githubEnabled);
   const [githubRepo, setGithubRepo] = useState<Settings["githubRepo"]>(DEFAULT_SETTINGS.githubRepo);
 
@@ -248,6 +268,7 @@ export default function ChatApp() {
   const [pinsOpen, setPinsOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [hydrated, setHydrated] = useState(false);
+  const [dag, setDag] = useState<DagSnapshot | null>(null);
 
   const [projects, setProjects] = useState<Project[]>([
     { id: "inbox", name: "Inbox" },
@@ -287,11 +308,29 @@ export default function ChatApp() {
       .slice(0, 60)
       .map((p) => ({ id: p.id, title: p.title, url: p.url }));
 
+    const canvasDag = dag
+      ? {
+          nodes: dag.nodes.slice(0, 40).map((n) => ({
+            id: n.id,
+            title: n.title,
+            tags: n.tags ?? [],
+            score: n.score ?? null,
+          })),
+          edges: dag.edges.slice(0, 60).map((e) => ({ source: e.source, target: e.target })),
+          meta: {
+            nodeCount: dag.nodes.length,
+            edgeCount: dag.edges.length,
+            truncated: { nodes: dag.nodes.length > 40, edges: dag.edges.length > 60 },
+          },
+        }
+      : null;
+
     const payload = {
       activeProject: { id: activeProject.id, name: activeProject.name },
       projects: projectsPayload,
       tasks,
       webPins,
+      canvasDag,
       github: {
         toolsEnabled: githubEnabled,
         selectedRepo: githubRepo ? `${githubRepo.owner}/${githubRepo.repo}` : null,
@@ -307,7 +346,7 @@ export default function ChatApp() {
     };
 
     return `Workspace context (Projects/Tasks/Web Pins): ${JSON.stringify(payload)}`;
-  }, [activeProjectId, githubEnabled, githubRepo, pinsByProject, projects, tasksByProject]);
+  }, [activeProjectId, dag, githubEnabled, githubRepo, pinsByProject, projects, tasksByProject]);
 
   useEffect(() => {
     function syncSettingsFromStorage() {
@@ -324,6 +363,7 @@ export default function ChatApp() {
         if (typeof parsed.systemPrompt === "string") setSystemPrompt(parsed.systemPrompt);
         if (typeof parsed.webScrapeEnabled === "boolean") setWebScrapeEnabled(parsed.webScrapeEnabled);
         if (typeof parsed.webScrapeAuto === "boolean") setWebScrapeAuto(parsed.webScrapeAuto);
+        if (parsed.theme === "default" || parsed.theme === "galaxy") setTheme(parsed.theme);
         if (typeof parsed.githubEnabled === "boolean") setGithubEnabled(parsed.githubEnabled);
 
         const githubRepoRaw = parsed.githubRepo;
@@ -345,8 +385,54 @@ export default function ChatApp() {
       }
     }
 
+    function syncDagFromStorage() {
+      try {
+        const raw = safeLocalStorageGet(DAG_KEY);
+        if (!raw) {
+          setDag(null);
+          return;
+        }
+        const parsed = JSON.parse(raw) as unknown;
+        if (!isRecord(parsed)) {
+          setDag(null);
+          return;
+        }
+        const nodesRaw = parsed.nodes;
+        const edgesRaw = parsed.edges;
+        if (!Array.isArray(nodesRaw) || !Array.isArray(edgesRaw)) {
+          setDag(null);
+          return;
+        }
+        const nodes: DagSnapshot["nodes"] = [];
+        for (const n of nodesRaw) {
+          if (!isRecord(n)) continue;
+          if (typeof n.id !== "string" || typeof n.title !== "string") continue;
+          if (typeof n.x !== "number" || typeof n.y !== "number") continue;
+          nodes.push({
+            id: n.id,
+            title: n.title,
+            x: n.x,
+            y: n.y,
+            description: typeof n.description === "string" ? n.description : undefined,
+            score: typeof n.score === "number" ? n.score : undefined,
+            tags: Array.isArray(n.tags) ? n.tags.filter((t) => typeof t === "string") : undefined,
+          });
+        }
+        const edges: DagSnapshot["edges"] = [];
+        for (const e of edgesRaw) {
+          if (!isRecord(e)) continue;
+          if (typeof e.id !== "string" || typeof e.source !== "string" || typeof e.target !== "string") continue;
+          edges.push({ id: e.id, source: e.source, target: e.target });
+        }
+        setDag({ nodes, edges, version: typeof parsed.version === "number" ? parsed.version : undefined });
+      } catch {
+        setDag(null);
+      }
+    }
+
     function hydrateFromStorage() {
       syncSettingsFromStorage();
+      syncDagFromStorage();
 
       try {
         const rawMessages = safeLocalStorageGet(MESSAGES_KEY);
@@ -446,14 +532,19 @@ export default function ChatApp() {
 
     function onFocus() {
       syncSettingsFromStorage();
+      syncDagFromStorage();
     }
 
     function onVisibilityChange() {
-      if (document.visibilityState === "visible") syncSettingsFromStorage();
+      if (document.visibilityState === "visible") {
+        syncSettingsFromStorage();
+        syncDagFromStorage();
+      }
     }
 
     function onStorage(e: StorageEvent) {
       if (e.key === SETTINGS_KEY) syncSettingsFromStorage();
+      if (e.key === DAG_KEY) syncDagFromStorage();
     }
 
     window.addEventListener("focus", onFocus);
@@ -479,6 +570,7 @@ export default function ChatApp() {
             systemPrompt,
             webScrapeEnabled,
             webScrapeAuto,
+            theme,
             githubEnabled,
             githubRepo,
           } satisfies Settings,
@@ -487,7 +579,23 @@ export default function ChatApp() {
     } catch {
       // ignore
     }
-  }, [githubEnabled, githubRepo, hydrated, model, systemPrompt, temperature, webScrapeAuto, webScrapeEnabled]);
+  }, [githubEnabled, githubRepo, hydrated, model, systemPrompt, temperature, theme, webScrapeAuto, webScrapeEnabled]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      const raw = localStorage.getItem(DAG_ASK_PAT_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as unknown;
+      if (!isRecord(parsed) || typeof parsed.question !== "string") return;
+      localStorage.removeItem(DAG_ASK_PAT_KEY);
+      const q = parsed.question.trim();
+      if (!q) return;
+      setDraft((prev) => (prev.trim() ? `${prev.trim()}\n\n${q}` : q));
+    } catch {
+      // ignore
+    }
+  }, [hydrated]);
 
   useEffect(() => {
     try {
@@ -1336,8 +1444,12 @@ export default function ChatApp() {
   const hasUserMessage = messages.some((m) => m.role === "user");
 
   return (
-    <div className="jarvis-bg h-dvh overflow-hidden">
-      <div ref={containerRef} className="relative mx-auto flex h-full w-full max-w-7xl gap-0 px-4 py-0">
+    <div className="jarvis-bg h-dvh overflow-hidden" data-theme={theme}>
+      <GalaxyBackground enabled={theme === "galaxy"} />
+      <div
+        ref={containerRef}
+        className="relative z-10 mx-auto flex h-full w-full max-w-7xl gap-0 px-4 py-0"
+      >
         {sidebarCollapsed ? (
           <button
             type="button"
@@ -1538,6 +1650,9 @@ export default function ChatApp() {
                         </button>
                       </div>
                       <div className="jarvis-composer-right">
+                        <Link href="/dag" className="jarvis-button h-10 px-4" title="Canvas">
+                          Cnavas
+                        </Link>
                         <Link
                           href="/settings"
                           className="jarvis-composer-icon"
@@ -1650,6 +1765,9 @@ export default function ChatApp() {
                       <div className="jarvis-composer-meta" title={model}>
                         {model}
                       </div>
+                      <Link href="/dag" className="jarvis-button h-10 px-4" title="Canvas">
+                        Cnavas
+                      </Link>
                       <Link
                         href="/settings"
                         className="jarvis-composer-icon"

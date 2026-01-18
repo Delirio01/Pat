@@ -1,7 +1,6 @@
-import ChatApp from "./components/ChatApp";
+import EntryGate from "@/app/components/EntryGate";
 
-export default function Home() {
-  return (
-    <ChatApp />
-  );
+export default function HomePage() {
+  return <EntryGate />;
 }
+

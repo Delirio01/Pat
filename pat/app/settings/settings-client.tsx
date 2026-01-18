@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Settings = {
   model: string;
@@ -9,11 +10,13 @@ type Settings = {
   systemPrompt: string;
   webScrapeEnabled: boolean;
   webScrapeAuto: boolean;
+  theme: "default" | "galaxy";
   githubEnabled: boolean;
   githubRepo: { owner: string; repo: string; ref: string } | null;
 };
 
 const SETTINGS_KEY = "pat.settings.v1";
+const AUTH_KEY = "pat.auth.v1";
 
 const DEFAULT_SETTINGS: Settings = {
   model: "grok-3",
@@ -22,6 +25,7 @@ const DEFAULT_SETTINGS: Settings = {
     "You are Grok, running in a sleek JARVIS-style console. Be direct, helpful, and technical. Use short, actionable answers. Ask clarifying questions when needed.",
   webScrapeEnabled: false,
   webScrapeAuto: true,
+  theme: "default",
   githubEnabled: false,
   githubRepo: null,
 };
@@ -72,6 +76,7 @@ function readSettings(): Settings {
         typeof parsed.webScrapeAuto === "boolean"
           ? parsed.webScrapeAuto
           : DEFAULT_SETTINGS.webScrapeAuto,
+      theme: parsed.theme === "galaxy" || parsed.theme === "default" ? parsed.theme : DEFAULT_SETTINGS.theme,
       githubEnabled:
         typeof parsed.githubEnabled === "boolean"
           ? parsed.githubEnabled
@@ -84,12 +89,14 @@ function readSettings(): Settings {
 }
 
 export default function SettingsClient() {
+  const router = useRouter();
   const initial = readSettings();
   const [model, setModel] = useState(initial.model);
   const [temperature, setTemperature] = useState(initial.temperature);
   const [systemPrompt, setSystemPrompt] = useState(initial.systemPrompt);
   const [webScrapeEnabled, setWebScrapeEnabled] = useState(initial.webScrapeEnabled);
   const [webScrapeAuto, setWebScrapeAuto] = useState(initial.webScrapeAuto);
+  const [theme, setTheme] = useState<Settings["theme"]>(initial.theme);
   const [githubEnabled, setGithubEnabled] = useState(initial.githubEnabled);
   const [githubRepo, setGithubRepo] = useState<Settings["githubRepo"]>(initial.githubRepo);
 
@@ -118,13 +125,13 @@ export default function SettingsClient() {
       localStorage.setItem(
         SETTINGS_KEY,
         JSON.stringify(
-          { model, temperature, systemPrompt, webScrapeEnabled, webScrapeAuto, githubEnabled, githubRepo } satisfies Settings,
+          { model, temperature, systemPrompt, webScrapeEnabled, webScrapeAuto, theme, githubEnabled, githubRepo } satisfies Settings,
         ),
       );
     } catch {
       // ignore
     }
-  }, [githubEnabled, githubRepo, model, systemPrompt, temperature, webScrapeAuto, webScrapeEnabled]);
+  }, [githubEnabled, githubRepo, model, systemPrompt, temperature, theme, webScrapeAuto, webScrapeEnabled]);
 
   useEffect(() => {
     let cancelled = false;
@@ -191,7 +198,7 @@ export default function SettingsClient() {
   }, [githubStatus.connected]);
 
   return (
-    <div className="jarvis-bg h-dvh overflow-hidden">
+    <div className="jarvis-bg h-dvh overflow-hidden" data-theme={theme}>
       <div className="mx-auto flex h-full w-full max-w-4xl px-4 py-5 md:px-6">
         <main className="jarvis-panel flex h-full min-w-0 flex-1 flex-col overflow-hidden">
           <header className="jarvis-header px-4 py-3 md:px-5">
@@ -219,13 +226,28 @@ export default function SettingsClient() {
                     setSystemPrompt(DEFAULT_SETTINGS.systemPrompt);
                     setWebScrapeEnabled(DEFAULT_SETTINGS.webScrapeEnabled);
                     setWebScrapeAuto(DEFAULT_SETTINGS.webScrapeAuto);
+                    setTheme(DEFAULT_SETTINGS.theme);
                     setGithubEnabled(DEFAULT_SETTINGS.githubEnabled);
                     setGithubRepo(DEFAULT_SETTINGS.githubRepo);
                   }}
                 >
                   Reset
                 </button>
-                <Link href="/" className="jarvis-button">
+                <button
+                  type="button"
+                  className="jarvis-button"
+                  onClick={() => {
+                    try {
+                      sessionStorage.removeItem(AUTH_KEY);
+                    } catch {
+                      // ignore
+                    }
+                    router.push("/");
+                  }}
+                >
+                  Logout
+                </button>
+                <Link href="/chat" className="jarvis-button">
                   Back
                 </Link>
               </div>
@@ -236,6 +258,23 @@ export default function SettingsClient() {
 
           <section className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 md:px-5">
             <div className="mx-auto w-full max-w-2xl space-y-5">
+              <div>
+                <div className="mb-2 text-[12px] font-medium text-[color:var(--jarvis-muted)]">
+                  Theme
+                </div>
+                <select
+                  value={theme}
+                  onChange={(e) => setTheme(e.target.value as Settings["theme"])}
+                  className="jarvis-input h-11 w-full px-3 text-[14px]"
+                >
+                  <option value="default">Default</option>
+                  <option value="galaxy">Galaxy</option>
+                </select>
+                <div className="mt-2 text-[12px] text-[color:var(--jarvis-muted)]">
+                  Galaxy adds a subtle animated particle field behind the main chat interface.
+                </div>
+              </div>
+
               <div>
                 <div className="mb-2 text-[12px] font-medium text-[color:var(--jarvis-muted)]">
                   Model
