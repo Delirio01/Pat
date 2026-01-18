@@ -59,6 +59,68 @@ body {
   background: var(--background);
 }
 
+.jarvis-chat-underlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.jarvis-chat-underlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(900px 520px at 50% 45%, rgba(255, 255, 255, 0.04), transparent 60%),
+    radial-gradient(760px 420px at 50% 60%, rgba(255, 255, 255, 0.02), transparent 62%);
+  opacity: 0.9;
+}
+
+.jarvis-chat-underlay-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 720px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.62);
+  opacity: 1;
+  transform: translateY(-10px);
+  filter: blur(0px);
+  -webkit-mask-image: radial-gradient(circle at 50% 45%, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 72%);
+  mask-image: radial-gradient(circle at 50% 45%, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 72%);
+}
+
+.jarvis-tesla-icon {
+  width: clamp(120px, 18vw, 180px);
+  height: auto;
+  opacity: 0.18;
+}
+
+.jarvis-tesla-quote {
+  max-width: 620px;
+  opacity: 0.75;
+}
+
+.jarvis-tesla-quote-text {
+  font-size: 14px;
+  line-height: 1.65;
+  letter-spacing: 0.02em;
+}
+
+.jarvis-tesla-quote-attrib {
+  margin-top: 6px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
 .jarvis-panel {
   border-radius: 16px;
   background: var(--jarvis-surface);
@@ -475,14 +537,22 @@ body {
   flex: 0 0 auto;
 }
 
+.jarvis-avatar svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
 .jarvis-avatar-assistant {
   border-color: rgba(139, 243, 255, 0.18);
   background: rgba(139, 243, 255, 0.06);
+  color: rgba(139, 243, 255, 0.92);
 }
 
 .jarvis-avatar-user {
   border-color: rgba(255, 255, 255, 0.10);
   background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.90);
 }
 
 .jarvis-prose {

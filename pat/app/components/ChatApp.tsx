@@ -1350,8 +1350,51 @@ export default function ChatApp() {
           </button>
         ) : null}
 
-        <main className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
-          <section className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-8 md:px-8">
+        <main className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="jarvis-chat-underlay" aria-hidden="true">
+            <div className="jarvis-chat-underlay-inner">
+              <svg
+                className="jarvis-tesla-icon"
+                viewBox="0 0 100 100"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="44"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  opacity="0.55"
+                />
+                <path
+                  d="M55 24H29.5c-2.2 0-4 1.8-4 4v.7c0 2.2 1.8 4 4 4h8.3V72c0 2.8 2.2 5 5 5h2.4c2.8 0 5-2.2 5-5V32.7H55c2.2 0 4-1.8 4-4V28c0-2.2-1.8-4-4-4Z"
+                  fill="currentColor"
+                  opacity="0.45"
+                />
+                <path
+                  d="M63.5 35.5 56 46l6.2 2.4-9.9 15.8 1.8-12.1-6.3-2.4 8.7-14.2Z"
+                  fill="currentColor"
+                  opacity="0.55"
+                />
+                <path
+                  d="M31 78.5c6.9 4.5 13.7 6.7 20.4 6.7 6.8 0 13.3-2.1 19.6-6.4"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                  opacity="0.40"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="jarvis-tesla-quote">
+                <div className="jarvis-tesla-quote-text">
+                  “The present is theirs; the future, for which I really worked, is mine.”
+                </div>
+                <div className="jarvis-tesla-quote-attrib">— Nikola Tesla</div>
+              </div>
+            </div>
+          </div>
+
+          <section className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-8 md:px-8">
             {hasUserMessage ? (
               <div className="mx-auto w-full max-w-[860px] space-y-8">
                 {messages.map((m) => (
@@ -1364,7 +1407,31 @@ export default function ChatApp() {
                       }
                       aria-hidden="true"
                     >
-                      {m.role === "assistant" ? "G" : "Y"}
+                      {m.role === "assistant" ? (
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path
+                            d="M12 2l1.2 4.6L18 5l-2.6 3.9L20 12l-4.6 1.1L18 19l-4.8-1.6L12 22l-1.2-4.6L6 19l2.6-5.9L4 12l4.6-3.1L6 5l4.8 1.6L12 2Z"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                            strokeLinejoin="round"
+                          />
+                          <circle cx="12" cy="12" r="2.1" fill="currentColor" opacity="0.28" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path
+                            d="M12 12a4.25 4.25 0 1 0-4.25-4.25A4.25 4.25 0 0 0 12 12Z"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                          />
+                          <path
+                            d="M4.5 21c1.9-4 5.1-6 7.5-6s5.6 2 7.5 6"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      )}
                     </div>
 
                     <div className="min-w-0 flex-1">
@@ -1507,7 +1574,7 @@ export default function ChatApp() {
           </section>
 
           {hasUserMessage ? (
-            <footer className="px-6 py-4 md:px-8">
+            <footer className="relative z-10 px-6 py-4 md:px-8">
               {error ? (
                 <div className="jarvis-error mb-3 text-sm">
                   {error}
