@@ -34,6 +34,19 @@ Once enabled, Grok can browse and read your repo via tools:
 
 Note: GitHub code search may not match non-default branches; `github_read`/`github_list` use your selected branch/ref.
 
+## Todoist (Tasks & Reminders)
+
+To let Pat create/manage tasks and reminders in your Todoist account:
+
+1) In Todoist, generate an API token (Settings → Integrations).
+2) In Pat, go to `http://localhost:3000/settings` → **Add Todoist account** → paste your token.
+3) In chat, ask things like:
+   - “Create a Todoist task: Pay rent, due tomorrow 9am”
+   - “List my Todoist tasks for today”
+   - “Add a reminder for task 123 tomorrow at 8:30am”
+
+Note: The token is stored locally in your browser (localStorage) and is only sent to the server when Todoist tools are used.
+
 ## xAI Models (Notes)
 
 Quick reference notes I can keep in-repo for later planning: `pat/docs/xai-models.md`.

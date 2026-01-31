@@ -19,6 +19,7 @@ type Settings = {
   webScrapeEnabled: boolean;
   webScrapeAuto: boolean;
   theme: "default" | "galaxy";
+  todoistToken: string;
   githubEnabled: boolean;
   githubRepo: { owner: string; repo: string; ref: string } | null;
 };
@@ -99,6 +100,7 @@ const DEFAULT_SETTINGS: Settings = {
   webScrapeEnabled: false,
   webScrapeAuto: true,
   theme: "default",
+  todoistToken: "",
   githubEnabled: false,
   githubRepo: null,
 };
@@ -237,6 +239,7 @@ export default function ChatApp() {
   const [webScrapeEnabled, setWebScrapeEnabled] = useState(DEFAULT_SETTINGS.webScrapeEnabled);
   const [webScrapeAuto, setWebScrapeAuto] = useState(DEFAULT_SETTINGS.webScrapeAuto);
   const [theme, setTheme] = useState<Settings["theme"]>(DEFAULT_SETTINGS.theme);
+  const [todoistToken, setTodoistToken] = useState(DEFAULT_SETTINGS.todoistToken);
   const [githubEnabled, setGithubEnabled] = useState(DEFAULT_SETTINGS.githubEnabled);
   const [githubRepo, setGithubRepo] = useState<Settings["githubRepo"]>(DEFAULT_SETTINGS.githubRepo);
 
@@ -364,6 +367,7 @@ export default function ChatApp() {
         if (typeof parsed.webScrapeEnabled === "boolean") setWebScrapeEnabled(parsed.webScrapeEnabled);
         if (typeof parsed.webScrapeAuto === "boolean") setWebScrapeAuto(parsed.webScrapeAuto);
         if (parsed.theme === "default" || parsed.theme === "galaxy") setTheme(parsed.theme);
+        if (typeof parsed.todoistToken === "string") setTodoistToken(parsed.todoistToken);
         if (typeof parsed.githubEnabled === "boolean") setGithubEnabled(parsed.githubEnabled);
 
         const githubRepoRaw = parsed.githubRepo;
@@ -571,6 +575,7 @@ export default function ChatApp() {
             webScrapeEnabled,
             webScrapeAuto,
             theme,
+            todoistToken,
             githubEnabled,
             githubRepo,
           } satisfies Settings,
@@ -579,7 +584,7 @@ export default function ChatApp() {
     } catch {
       // ignore
     }
-  }, [githubEnabled, githubRepo, hydrated, model, systemPrompt, temperature, theme, webScrapeAuto, webScrapeEnabled]);
+  }, [githubEnabled, githubRepo, hydrated, model, systemPrompt, temperature, theme, todoistToken, webScrapeAuto, webScrapeEnabled]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -1248,6 +1253,7 @@ export default function ChatApp() {
             firecrawl: webScrapeEnabled,
             github: githubEnabled,
             githubRepo,
+            todoistToken,
           },
         }),
         signal: controller.signal,

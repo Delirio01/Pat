@@ -11,6 +11,7 @@ type Settings = {
   webScrapeEnabled: boolean;
   webScrapeAuto: boolean;
   theme: "default" | "galaxy";
+  todoistToken: string;
   githubEnabled: boolean;
   githubRepo: { owner: string; repo: string; ref: string } | null;
 };
@@ -26,6 +27,7 @@ const DEFAULT_SETTINGS: Settings = {
   webScrapeEnabled: false,
   webScrapeAuto: true,
   theme: "default",
+  todoistToken: "",
   githubEnabled: false,
   githubRepo: null,
 };
@@ -77,6 +79,7 @@ function readSettings(): Settings {
           ? parsed.webScrapeAuto
           : DEFAULT_SETTINGS.webScrapeAuto,
       theme: parsed.theme === "galaxy" || parsed.theme === "default" ? parsed.theme : DEFAULT_SETTINGS.theme,
+      todoistToken: typeof parsed.todoistToken === "string" ? parsed.todoistToken : DEFAULT_SETTINGS.todoistToken,
       githubEnabled:
         typeof parsed.githubEnabled === "boolean"
           ? parsed.githubEnabled
@@ -97,6 +100,7 @@ export default function SettingsClient() {
   const [webScrapeEnabled, setWebScrapeEnabled] = useState(initial.webScrapeEnabled);
   const [webScrapeAuto, setWebScrapeAuto] = useState(initial.webScrapeAuto);
   const [theme, setTheme] = useState<Settings["theme"]>(initial.theme);
+  const [todoistToken, setTodoistToken] = useState(initial.todoistToken);
   const [githubEnabled, setGithubEnabled] = useState(initial.githubEnabled);
   const [githubRepo, setGithubRepo] = useState<Settings["githubRepo"]>(initial.githubRepo);
 
@@ -125,13 +129,13 @@ export default function SettingsClient() {
       localStorage.setItem(
         SETTINGS_KEY,
         JSON.stringify(
-          { model, temperature, systemPrompt, webScrapeEnabled, webScrapeAuto, theme, githubEnabled, githubRepo } satisfies Settings,
+          { model, temperature, systemPrompt, webScrapeEnabled, webScrapeAuto, theme, todoistToken, githubEnabled, githubRepo } satisfies Settings,
         ),
       );
     } catch {
       // ignore
     }
-  }, [githubEnabled, githubRepo, model, systemPrompt, temperature, theme, webScrapeAuto, webScrapeEnabled]);
+  }, [githubEnabled, githubRepo, model, systemPrompt, temperature, theme, todoistToken, webScrapeAuto, webScrapeEnabled]);
 
   useEffect(() => {
     let cancelled = false;
@@ -227,6 +231,7 @@ export default function SettingsClient() {
                     setWebScrapeEnabled(DEFAULT_SETTINGS.webScrapeEnabled);
                     setWebScrapeAuto(DEFAULT_SETTINGS.webScrapeAuto);
                     setTheme(DEFAULT_SETTINGS.theme);
+                    setTodoistToken(DEFAULT_SETTINGS.todoistToken);
                     setGithubEnabled(DEFAULT_SETTINGS.githubEnabled);
                     setGithubRepo(DEFAULT_SETTINGS.githubRepo);
                   }}
@@ -356,6 +361,25 @@ export default function SettingsClient() {
                   Tip: <span className="jarvis-kbd">/scrape</span>{" "}
                   <span className="jarvis-kbd">https://example.com</span>{" "}
                   <span className="jarvis-kbd">your question</span>
+                </div>
+              </div>
+
+              <div className="jarvis-divider" />
+
+              <div>
+                <div className="mb-2 text-[12px] font-medium text-[color:var(--jarvis-muted)]">
+                  Add Todoist account
+                </div>
+                <input
+                  value={todoistToken}
+                  onChange={(e) => setTodoistToken(e.target.value)}
+                  placeholder="Paste your Todoist API token"
+                  type="password"
+                  className="jarvis-input h-11 w-full px-3 text-[14px]"
+                  autoComplete="off"
+                />
+                <div className="mt-2 text-[12px] text-[color:var(--jarvis-muted)]">
+                  Stored locally in your browser. Used to let Pat create and manage tasks/reminders in your Todoist account.
                 </div>
               </div>
 
